@@ -1,22 +1,34 @@
 from flask import Flask, render_template, request, jsonify
+import random
 
 app = Flask(__name__)
 
-# Tic-Tac-Toe Game Variables
+# Game state
 tttgrid = [""] * 9
-player = "X"
-game_over = False
+current_player = "X"
+game_mode = None
 
-# Winning Combinations
-win_combinations = [
+# Winning combinations
+WIN_COMBINATIONS = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8],
     [0, 3, 6], [1, 4, 7], [2, 5, 8],
     [0, 4, 8], [2, 4, 6]
 ]
 
-# Minimax AI Function
+def check_winner():
+    """Check if there's a winner or a tie."""
+    for combo in WIN_COMBINATIONS:
+        if tttgrid[combo[0]] == tttgrid[combo[1]] == tttgrid[combo[2]] != "":
+            return tttgrid[combo[0]]
+
+    if "" not in tttgrid:
+        return "Tie"
+
+    return None
+
 def minimax(board, depth, is_maximizing):
-    scores = {"X": -1, "O": 1, "tie": 0}
+    """AI Move Calculation using Minimax Algorithm."""
+    scores = {"X": -1, "O": 1, "Tie": 0}
 
     winner = check_winner()
     if winner:
@@ -41,71 +53,63 @@ def minimax(board, depth, is_maximizing):
                 best_score = min(score, best_score)
         return best_score
 
-# Best move for AI
 def best_move():
+    """Determine the best move for AI."""
     best_score = -float("inf")
     move = None
+
     for i in range(9):
         if tttgrid[i] == "":
             tttgrid[i] = "O"
             score = minimax(tttgrid, 0, False)
             tttgrid[i] = ""
+
             if score > best_score:
                 best_score = score
                 move = i
+
     return move
 
-# Check for a winner
-def check_winner():
-    for combo in win_combinations:
-        if tttgrid[combo[0]] == tttgrid[combo[1]] == tttgrid[combo[2]] != "":
-            return tttgrid[combo[0]]
-    if "" not in tttgrid:
-        return "tie"
-    return None
-
-# Route to serve the game page
-@app.route('/')
+@app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html")
 
-# API route to handle player moves
-@app.route('/move', methods=['POST'])
-def player_move():
-    global player, game_over
-    if game_over:
-        return jsonify({"message": "Game over!"})
+@app.route("/move", methods=["POST"])
+def make_move():
+    global current_player, game_mode
 
     data = request.json
-    pos = data.get("position")
+    position = data["position"]
+    game_mode = data["mode"]
 
-    if tttgrid[pos] == "":
-        tttgrid[pos] = player
+    if tttgrid[position] == "":
+        tttgrid[position] = current_player
+
+        # Check if player won
         winner = check_winner()
-
         if winner:
-            game_over = True
-            return jsonify({"winner": winner, "grid": tttgrid})
+            return jsonify({"grid": tttgrid, "message": f"{winner} wins!"})
 
-        # AI Move
-        ai_pos = best_move()
-        if ai_pos is not None:
-            tttgrid[ai_pos] = "O"
-            winner = check_winner()
-            if winner:
-                game_over = True
-                return jsonify({"winner": winner, "grid": tttgrid})
+        # Switch player
+        if game_mode == "1v1":
+            current_player = "O" if current_player == "X" else "X"
+        else:
+            # AI move for 1vBot mode
+            ai_move = best_move()
+            if ai_move is not None:
+                tttgrid[ai_move] = "O"
+                winner = check_winner()
+                if winner:
+                    return jsonify({"grid": tttgrid, "message": f"{winner} wins!"})
 
-    return jsonify({"grid": tttgrid})
+    return jsonify({"grid": tttgrid, "message": "Your Turn!"})
 
-# API route to reset the game
-@app.route('/reset', methods=['POST'])
+@app.route("/reset", methods=["POST"])
 def reset_game():
-    global tttgrid, player, game_over
+    global tttgrid, current_player
     tttgrid = [""] * 9
-    player = "X"
-    game_over = False
-    return jsonify({"message": "Game reset", "grid": tttgrid})
+    current_player = "X"
+    return jsonify({"grid": tttgrid, "message": "Game Reset!"})
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
