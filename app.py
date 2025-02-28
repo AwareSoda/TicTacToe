@@ -1,38 +1,27 @@
 from flask import Flask, render_template, request, jsonify
-import random
 
 app = Flask(__name__)
 
-# Game state
-tttgrid = [""] * 9
+board = [""] * 9
 current_player = "X"
 game_mode = None
 
-# Winning combinations
-WIN_COMBINATIONS = [
-    [0, 1, 2], [3, 4, 5], [6, 7, 8],
-    [0, 3, 6], [1, 4, 7], [2, 5, 8],
-    [0, 4, 8], [2, 4, 6]
-]
-
 def check_winner():
-    """Check if there's a winner or a tie."""
-    for combo in WIN_COMBINATIONS:
-        if tttgrid[combo[0]] == tttgrid[combo[1]] == tttgrid[combo[2]] != "":
-            return tttgrid[combo[0]]
-
-    if "" not in tttgrid:
-        return "Tie"
-
+    win_conditions = [(0,1,2), (3,4,5), (6,7,8), (0,3,6), (1,4,7), (2,5,8), (0,4,8), (2,4,6)]
+    for (a, b, c) in win_conditions:
+        if board[a] == board[b] == board[c] and board[a] != "":
+            return board[a]
     return None
 
 def minimax(board, depth, is_maximizing):
-    """AI Move Calculation using Minimax Algorithm."""
-    scores = {"X": -1, "O": 1, "Tie": 0}
+    scores = {"X": -1, "O": 1, "tie": 0}
 
     winner = check_winner()
     if winner:
-        return scores[winner]
+        return scores.get(winner, 0)
+
+    if "" not in board:
+        return scores["tie"]
 
     if is_maximizing:
         best_score = -float("inf")
@@ -53,66 +42,76 @@ def minimax(board, depth, is_maximizing):
                 best_score = min(score, best_score)
         return best_score
 
-def best_move():
-    """Determine the best move for AI."""
+def best_bot_move():
     best_score = -float("inf")
     move = None
-
     for i in range(9):
-        if tttgrid[i] == "":
-            tttgrid[i] = "O"
-            score = minimax(tttgrid, 0, False)
-            tttgrid[i] = ""
-
+        if board[i] == "":
+            board[i] = "O"
+            score = minimax(board, 0, False)
+            board[i] = ""
             if score > best_score:
                 best_score = score
                 move = i
-
     return move
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
-@app.route("/move", methods=["POST"])
-def make_move():
-    global current_player, game_mode
-
-    data = request.json
-    position = data["position"]
+@app.route("/set_mode", methods=["POST"])
+def set_mode():
+    global game_mode
+    data = request.get_json()
     game_mode = data["mode"]
+    return jsonify(success=True)
 
-    if tttgrid[position] == "":
-        tttgrid[position] = current_player
+@app.route("/move", methods=["POST"])
+def move():
+    global current_player
+    data = request.get_json()
+    cell = data["cell"]
 
-        # Check if player won
+    if board[cell] == "":
+        board[cell] = current_player
         winner = check_winner()
         if winner:
-            return jsonify({"grid": tttgrid, "message": f"{winner} wins!"})
+            return jsonify(success=True, winner=winner)
+        if "" not in board:
+            return jsonify(success=True, draw=True)
 
-        # Switch player
-        if game_mode == "1v1":
-            current_player = "O" if current_player == "X" else "X"
-        else:
-            # AI move for 1vBot mode
-            ai_move = best_move()
-            if ai_move is not None:
-                tttgrid[ai_move] = "O"
-                winner = check_winner()
-                if winner:
-                    return jsonify({"grid": tttgrid, "message": f"{winner} wins!"})
+        current_player = "O" if current_player == "X" else "X"
+        return jsonify(success=True)
 
-    return jsonify({"grid": tttgrid, "message": "Your Turn!"})
+    return jsonify(success=False)
+
+@app.route("/bot_move", methods=["POST"])
+def bot_move():
+    global current_player
+    if game_mode != "1vBot" or current_player != "O":
+        return jsonify(success=False)
+
+    bot_choice = best_bot_move()
+    if bot_choice is not None:
+        board[bot_choice] = "O"
+        winner = check_winner()
+        if winner:
+            return jsonify(success=True, cell=bot_choice, winner=winner)
+        if "" not in board:
+            return jsonify(success=True, cell=bot_choice, draw=True)
+
+        current_player = "X"
+        return jsonify(success=True, cell=bot_choice)
+
+    return jsonify(success=False)
 
 @app.route("/reset", methods=["POST"])
-def reset_game():
-    global board, current_player, game_over
-
-    board = [""] * 9  # Reset the board
-    current_player = "X"  # X always starts
-    game_over = False  # Reset game state
-
-    return jsonify({'message': "Game Reset!", 'board': board, 'current_player': current_player})
+def reset():
+    global board, current_player, game_mode
+    board = [""] * 9
+    current_player = "X"
+    game_mode = None
+    return jsonify(success=True)
 
 if __name__ == "__main__":
     app.run(debug=True)

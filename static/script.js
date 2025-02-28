@@ -1,43 +1,76 @@
 document.addEventListener("DOMContentLoaded", function () {
-    let cells = document.querySelectorAll(".cell");
-    let message = document.getElementById("message");
-    let resetBtn = document.getElementById("reset");
+    let currentPlayer = "X";  
+    let gameMode = null;
+    let gameOver = false;
 
-    // Handle cell click
-    cells.forEach((cell, index) => {
-        cell.addEventListener("click", function () {
-            fetch("/move", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ position: index })
-            })
-            .then(response => response.json())
-            .then(data => {
-                updateBoard(data.grid);
-                if (data.winner) {
-                    message.innerText = `${data.winner} wins!`;
-                }
-            });
+    function updateStatus(message) {
+        document.getElementById("status").innerText = message;
+    }
+
+    window.startGame = function (mode) {
+        gameMode = mode;
+        fetch("/set_mode", {
+            method: "POST",
+            body: JSON.stringify({ mode }),
+            headers: { "Content-Type": "application/json" }
+        }).then(() => {
+            document.getElementById("mode-selection").style.display = "none";
+            document.getElementById("game-container").style.display = "block";
+            updateStatus("Player X's turn");
         });
-    });
+    };
 
-    // Update the board
-    function updateBoard(grid) {
-        grid.forEach((value, index) => {
-            cells[index].innerText = value;
+    window.makeMove = function (cellIndex) {
+        if (gameOver || !gameMode) return;
+
+        fetch("/move", {
+            method: "POST",
+            body: JSON.stringify({ cell: cellIndex }),
+            headers: { "Content-Type": "application/json" }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById(`cell-${cellIndex}`).innerText = currentPlayer;
+                if (data.winner) {
+                    updateStatus(`${data.winner} wins!`);
+                    gameOver = true;
+                } else if (data.draw) {
+                    updateStatus("It's a draw!");
+                    gameOver = true;
+                } else {
+                    currentPlayer = (currentPlayer === "X") ? "O" : "X";
+                    updateStatus(`Player ${currentPlayer}'s turn`);
+
+                    if (gameMode === "1vBot" && currentPlayer === "O") {
+                        setTimeout(botMove, 500);
+                    }
+                }
+            }
+        });
+    };
+
+    function botMove() {
+        fetch("/bot_move", { method: "POST" })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById(`cell-${data.cell}`).innerText = "O";
+                if (data.winner) {
+                    updateStatus("Bot wins!");
+                    gameOver = true;
+                } else if (data.draw) {
+                    updateStatus("It's a draw!");
+                    gameOver = true;
+                } else {
+                    currentPlayer = "X";
+                    updateStatus("Player X's turn");
+                }
+            }
         });
     }
 
-    // Reset game
     document.getElementById("reset").addEventListener("click", function () {
-        fetch("/reset", { method: "POST" })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("message").innerText = data.message;
-                updateBoard(data.board);  // Ensure board resets visually
-                currentPlayer = data.current_player;  // Reset turn
-            })
-            .catch(error => console.error("Error resetting game:", error));
-    });
+        fetch("/reset", { method: "POST" }).then(() => location.reload());
     });
 });

@@ -5,52 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tic-Tac-Toe</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
 </head>
 <body>
     <h1>Tic-Tac-Toe</h1>
-    
-    <div id="gameModeSelection">
-        <h2>Select Game Mode</h2>
-        <button onclick="setGameMode('1v1')">1v1 (Player vs Player)</button>
-        <button onclick="setGameMode('1vBot')">1vBot (Player vs AI)</button>
+    <p id="status">Select a game mode to start</p>
+
+    <div id="mode-selection">
+        <button onclick="startGame('1v1')">1v1</button>
+        <button onclick="startGame('1vBot')">1vBot</button>
     </div>
 
-    <div id="gameBoard" style="display: none;">
-        <h2 id="message">Your Turn!</h2>
-        <div class="board">
+    <div id="game-container" style="display: none;">
+        <div id="board">
             {% for i in range(9) %}
-            <div class="cell" id="cell{{ i }}" onclick="makeMove({{ i }})"></div>
+                <div class="cell" id="cell-{{ i }}" onclick="makeMove({{ i }})"></div>
             {% endfor %}
         </div>
         <button id="reset">Reset Game</button>
     </div>
-
-    <script>
-        let gameMode = null;
-
-        function setGameMode(mode) {
-            gameMode = mode;
-            document.getElementById("gameModeSelection").style.display = "none";
-            document.getElementById("gameBoard").style.display = "block";
-        }
-
-        function makeMove(position) {
-            fetch("/move", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ position: position, mode: gameMode })
-            })
-            .then(response => response.json())
-            .then(data => updateBoard(data));
-        }
-
-        function updateBoard(data) {
-            data.grid.forEach((value, index) => {
-                document.getElementById("cell" + index).innerText = value;
-            });
-
-            document.getElementById("message").innerText = data.message;
-        }
-    </script>
 </body>
 </html>

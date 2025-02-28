@@ -1,41 +1,25 @@
 body {
-    font-family: Arial, sans-serif;
-    text-align: center;
     background-color: yellow;
-    margin: 0;
-    padding: 20px;
+    text-align: center;
+    font-family: Arial, sans-serif;
 }
 
 h1 {
-    font-size: 36px;
-    margin-bottom: 10px;
+    font-size: 2em;
+    font-weight: bold;
 }
 
-h2 {
-    font-size: 20px;
-    margin-bottom: 20px;
+#status {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: blue;
+    margin: 10px 0;
 }
 
-button {
-    font-size: 18px;
-    padding: 10px 20px;
-    margin: 10px;
-    border: none;
-    background-color: black;
-    color: white;
-    cursor: pointer;
-    border-radius: 5px;
-}
-
-button:hover {
-    background-color: gray;
-}
-
-.board {
+#board {
     display: grid;
     grid-template-columns: repeat(3, 100px);
-    grid-template-rows: repeat(3, 100px);
-    gap: 5px;
+    grid-gap: 5px;
     justify-content: center;
     margin: 20px auto;
 }
@@ -44,26 +28,9 @@ button:hover {
     width: 100px;
     height: 100px;
     background-color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 36px;
-    font-weight: bold;
-    cursor: pointer;
+    font-size: 2em;
+    text-align: center;
+    line-height: 100px;
     border: 2px solid black;
-}
-
-.cell:hover {
-    background-color: lightgray;
-}
-
-#message {
-    font-size: 24px;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-#reset {
-    display: block;
-    margin: 20px auto;
+    cursor: pointer;
 }
