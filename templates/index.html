@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Tic-Tac-Toe</h1>
+    <p id="turn">It is X's turn.</p>
+    <div class="board">
+        {% for i in range(9) %}
+            <button class="cell" id="cell{{ i }}" onclick="makeMove({{ i }})"></button>
+        {% endfor %}
+    </div>
+    <button id="reset" onclick="resetGame()">Replay</button>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
