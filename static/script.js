@@ -1,29 +1,40 @@
-async function makeMove(position) {
-    let response = await fetch("/play", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ position: position })
+document.addEventListener("DOMContentLoaded", function () {
+    let cells = document.querySelectorAll(".cell");
+    let message = document.getElementById("message");
+    let resetBtn = document.getElementById("reset");
+
+    // Handle cell click
+    cells.forEach((cell, index) => {
+        cell.addEventListener("click", function () {
+            fetch("/move", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ position: index })
+            })
+            .then(response => response.json())
+            .then(data => {
+                updateBoard(data.grid);
+                if (data.winner) {
+                    message.innerText = `${data.winner} wins!`;
+                }
+            });
+        });
     });
 
-    let data = await response.json();
-    updateBoard(data.grid);
-
-    if (data.winner) {
-        document.getElementById("turn").innerText = data.winner === "tie" ? "It's a tie!" : `Player ${data.winner} wins!`;
-    } else {
-        document.getElementById("turn").innerText = `It is ${data.next}'s turn.`;
+    // Update the board
+    function updateBoard(grid) {
+        grid.forEach((value, index) => {
+            cells[index].innerText = value;
+        });
     }
-}
 
-async function resetGame() {
-    let response = await fetch("/reset", { method: "POST" });
-    let data = await response.json();
-    updateBoard(data.grid);
-    document.getElementById("turn").innerText = "It is X's turn.";
-}
-
-function updateBoard(grid) {
-    grid.forEach((mark, index) => {
-        document.getElementById(`cell${index}`).innerText = mark;
+    // Reset game
+    resetBtn.addEventListener("click", function () {
+        fetch("/reset", { method: "POST" })
+        .then(response => response.json())
+        .then(data => {
+            updateBoard(data.grid);
+            message.innerText = "Game Reset!";
+        });
     });
-}
+});
