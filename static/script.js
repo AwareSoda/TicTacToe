@@ -29,12 +29,15 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Reset game
-    resetBtn.addEventListener("click", function () {
+    document.getElementById("reset").addEventListener("click", function () {
         fetch("/reset", { method: "POST" })
-        .then(response => response.json())
-        .then(data => {
-            updateBoard(data.grid);
-            message.innerText = "Game Reset!";
-        });
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("message").innerText = data.message;
+                updateBoard(data.board);  // Ensure board resets visually
+                currentPlayer = data.current_player;  // Reset turn
+            })
+            .catch(error => console.error("Error resetting game:", error));
+    });
     });
 });

@@ -106,10 +106,13 @@ def make_move():
 
 @app.route("/reset", methods=["POST"])
 def reset_game():
-    global tttgrid, current_player
-    tttgrid = [""] * 9
-    current_player = "X"
-    return jsonify({"grid": tttgrid, "message": "Game Reset!"})
+    global board, current_player, game_over
+
+    board = [""] * 9  # Reset the board
+    current_player = "X"  # X always starts
+    game_over = False  # Reset game state
+
+    return jsonify({'message': "Game Reset!", 'board': board, 'current_player': current_player})
 
 if __name__ == "__main__":
     app.run(debug=True)
